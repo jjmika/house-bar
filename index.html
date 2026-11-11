@@ -957,7 +957,21 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
 </script>
 <script>
 (function(){
-  if ("serviceWorker" in navigator) { window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); }); }
+  if ("serviceWorker" in navigator) { window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(function(r){ try { r.update(); } catch (e) {} }).catch(function(){}); }); }
+  // Reload when a newer menu has been published (the Home Screen app often resumes instead of reloading).
+  var BUILT = "1794385930450";
+  function checkUpdate(){
+    if (!navigator.onLine) return;
+    fetch("version.json?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.json(); }).then(function(v){
+      if (!v || !v.v || v.v === BUILT) return;
+      var key = "house-bar-reloaded-for";
+      try { if (sessionStorage.getItem(key) === v.v) return; sessionStorage.setItem(key, v.v); } catch (e) {}
+      location.reload();
+    }).catch(function(){});
+  }
+  window.addEventListener("load", checkUpdate);
+  document.addEventListener("visibilitychange", function(){ if (document.visibilityState === "visible") checkUpdate(); });
+  window.addEventListener("pageshow", function(e){ if (e.persisted) checkUpdate(); });
   var lock = null;
   function wake(){ try { if (navigator.wakeLock && !lock) navigator.wakeLock.request("screen").then(function(l){ lock = l; l.addEventListener("release", function(){ lock = null; }); }).catch(function(){}); } catch (e) {} }
   document.addEventListener("click", wake, { once: true });

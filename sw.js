@@ -1,5 +1,5 @@
 // House Bar offline support. Bump VERSION when the menu changes.
-const VERSION = "house-bar-v27";
+const VERSION = "house-bar-v28";
 const CORE = ["./", "index.html", "manifest.webmanifest", "icons/apple-touch-icon.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
@@ -13,8 +13,10 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   // Menu page: try the network first so updates show up, fall back to the saved copy offline.
+  // Always ask the network for the version check, never a saved copy.
+  if (url.pathname.endsWith("/version.json")) return;
   if (req.mode === "navigate") {
-    e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put("index.html", copy)); return res; })
+    e.respondWith(fetch(req, { cache: "no-store" }).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put("index.html", copy)); return res; })
       .catch(() => caches.match("index.html")));
     return;
   }
