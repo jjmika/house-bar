@@ -78,8 +78,14 @@ button{cursor:pointer}
 .drink:active{background:rgba(156,122,84,.07)}
 .art-tile{width:108px;height:136px;background:var(--paper-2);border-radius:20px;display:grid;place-items:center;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
 .art-tile svg{transform-origin:50% 90%}
-.drink:active .art-tile svg,.drink:hover .art-tile svg{animation:wiggle .6s ease-in-out}
-@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}55%{transform:rotate(5deg)}80%{transform:rotate(-2deg)}}
+.face-shock{opacity:0}
+.drink:hover .liq,.drink:active .liq,.drink:focus-visible .liq,.art-big .liq{animation:fillup 1.15s cubic-bezier(.3,.7,.3,1) both}
+.drink:hover .face-shock,.drink:active .face-shock,.drink:focus-visible .face-shock,.art-big .face-shock{animation:shockon 1.25s steps(1) both}
+.drink:hover .face-main,.drink:active .face-main,.drink:focus-visible .face-main,.art-big .face-main{animation:mainoff 1.25s steps(1) both}
+.drink:hover .face-main g,.art-big .face-main{transform-box:fill-box}
+@keyframes fillup{from{transform:translateY(var(--ff))}to{transform:none}}
+@keyframes shockon{0%{opacity:1}80%{opacity:0}100%{opacity:0}}
+@keyframes mainoff{0%{opacity:0}80%{opacity:1}100%{opacity:1}}
 .tw{transform-box:fill-box;transform-origin:center;animation:twinkle 2.6s ease-in-out infinite}
 @keyframes twinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.6)}}
 .art-tile svg{width:106px;height:138px;display:block}
@@ -135,7 +141,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
 @media (min-height:700px) and (min-width:700px){.sheet-wrap{align-items:center}.sheet{border-radius:28px;border-bottom:1px solid var(--line)}}
 @keyframes fade{from{opacity:0}}
 @keyframes rise{from{transform:translateY(40px);opacity:0}}
-@media (prefers-reduced-motion:reduce){.sheet-wrap,.sheet,.tw,.enso .mascot,.facts .art-big svg,.drink:active .art-tile svg,.drink:hover .art-tile svg{animation:none}.key.holding::after{animation-duration:.01s}}
+@media (prefers-reduced-motion:reduce){.sheet-wrap,.sheet,.tw,.enso .mascot,.facts .art-big svg,.liq,.face-shock,.face-main{animation:none!important}.key.holding::after{animation-duration:.01s}}
 .close{position:absolute;top:14px;right:14px;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:24px;line-height:1}
 .eyebrow{margin:0;font-size:12.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--oak);font-weight:400}
 .d-name{font-family:var(--display);font-weight:700;font-size:clamp(34px,5vw,50px);line-height:1.1;margin:10px 0 12px;text-wrap:balance;padding-right:44px}
@@ -255,7 +261,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     // soft shadow
     out.push('<ellipse cx="50" cy="' + (g.tumbler ? g.bottom + 2 : 115) + '" rx="' + (g.tumbler ? w / 2 + 2 : 20) + '" ry="2.6" fill="#2a2723" opacity=".08"/>');
     // inside the bowl
-    out.push('<g clip-path="url(#' + id + ')">');
+    out.push('<g clip-path="url(#' + id + ')"><g class="liq" style="--ff:' + (g.bottom - g.fill + 6) + 'px">');
     out.push('<rect x="0" y="' + g.fill + '" width="100" height="' + (L.grad ? (g.bottom - g.fill + 1) : 130) + '" fill="url(#' + id + 'g)"/>');
     if (L.layer) out.push('<rect x="0" y="' + (g.bottom - (L.layer.h || 10)) + '" width="100" height="40" fill="' + safeColor(L.layer.c, c) + '" opacity=".95"/>');
     if (L.layers) { var ly = g.bottom; L.layers.forEach(function(lay){ ly -= (lay.h || 10); out.push('<rect x="0" y="' + ly + '" width="100" height="' + ((lay.h || 10) + (ly === g.bottom - (lay.h || 10) ? 40 : 0)) + '" fill="' + safeColor(lay.c, c) + '"/>'); }); }
@@ -277,7 +283,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     if (L.shimmer) for (var s = 0; s < 16; s++) out.push('<circle cx="' + (g.l + 5 + (s * 29 % (w - 10))) + '" cy="' + (g.fill + 4 + (s * 23 % Math.max(10, g.bottom - g.fill - 6))) + '" r="' + (s % 3 ? .7 : 1.1) + '" fill="#fff" opacity=".75"/>');
     if (L.bubbles) for (var b = 0; b < 10; b++) out.push('<circle cx="' + (g.l + 8 + (b * 31 % (w - 16))) + '" cy="' + (g.fill + 6 + (b * 19 % Math.max(10, g.bottom - g.fill - 10))) + '" r="1.1" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width=".6"/>');
     if (garn.indexOf("raspberry") >= 0) [[mid - 6, g.bottom - 10], [mid + 3, g.bottom - 14], [mid + 9, g.bottom - 8]].forEach(function(p){ out.push(berry(p[0], p[1])); });
-    out.push('</g>');
+    out.push('</g></g>');
     // the glass
     out.push('<path d="' + g.bowl + '" fill="#ffffff" fill-opacity=".16" stroke="#6c655c" stroke-width="1.3" stroke-linejoin="round"/>');
     out.push('<path d="M' + (g.l + 5) + ' ' + (g.top + 6) + ' Q' + (g.l + 4) + ' ' + ((g.top + g.bottom) / 2) + ' ' + (g.l + 9) + ' ' + (g.bottom - 6) + '" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.6" stroke-linecap="round"/>');
@@ -342,7 +348,9 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     var acc = L.acc || [];
     acc.forEach(function(n){ if (n !== "fangs" && n !== "scarf") out.push(accessory(n, g, mid)); });
     if (acc.indexOf("scarf") >= 0) out.push(accessory("scarf", g, mid));
-    out.push(face(L, g, mid + (Number(L.fx) || 0), c, acc.indexOf("fangs") >= 0));
+    var fmid = mid + (Number(L.fx) || 0), fangs = acc.indexOf("fangs") >= 0;
+    out.push(face(L, g, fmid, c, fangs, "o", "face-shock"));
+    out.push(face(L, g, fmid, c, fangs, (L.face === "o" || !L.face) ? "happy" : L.face, "face-main"));
     out.push(star(Math.max(6, g.l - 7), g.top + 8, 3.2, "#e3b04b", 0));
     out.push(star(Math.min(94, g.r + 8), g.top + 22, 2.3, "#f29a9a", 1.1));
     out.push('</svg>');
@@ -367,13 +375,13 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
   function heart(x, y, s, col){
     return '<path d="M' + x + ' ' + (y + 2.6 * s) + ' C' + (x - 4.2 * s) + ' ' + (y - .6 * s) + ' ' + (x - 1.8 * s) + ' ' + (y - 3.6 * s) + ' ' + x + ' ' + (y - 1.3 * s) + ' C' + (x + 1.8 * s) + ' ' + (y - 3.6 * s) + ' ' + (x + 4.2 * s) + ' ' + (y - .6 * s) + ' ' + x + ' ' + (y + 2.6 * s) + ' Z" fill="' + col + '"/>';
   }
-  function face(L, g, mid, c, fangs){
-    var y = g.fy, s = g.fs, ink = L.faceInk || (lum(c) < 0.42 ? "#f6efe3" : "#3a3430"), t = L.face || "dot", o = [];
+  function face(L, g, mid, c, fangs, tt, cls){
+    var y = g.fy, s = g.fs, ink = L.faceInk || (lum(c) < 0.42 ? "#f6efe3" : "#3a3430"), t = tt || L.face || "dot", o = [];
     var ex = 6 * s, er = 1.75 * s;
     function dot(x){ return '<circle cx="' + x + '" cy="' + y + '" r="' + er + '" fill="' + ink + '"/><circle cx="' + (x + .6 * s) + '" cy="' + (y - .7 * s) + '" r="' + (.6 * s) + '" fill="#fff"/>'; }
     function arc(x){ return '<path d="M' + (x - 2.2 * s) + ' ' + (y + .9 * s) + ' Q' + x + ' ' + (y - 2.1 * s) + ' ' + (x + 2.2 * s) + ' ' + (y + .9 * s) + '" fill="none" stroke="' + ink + '" stroke-width="' + (1.25 * s) + '" stroke-linecap="round"/>'; }
     function shut(x){ return '<path d="M' + (x - 2.2 * s) + ' ' + y + ' Q' + x + ' ' + (y + 1.6 * s) + ' ' + (x + 2.2 * s) + ' ' + y + '" fill="none" stroke="' + ink + '" stroke-width="' + (1.15 * s) + '" stroke-linecap="round"/>'; }
-    o.push('<g class="face">');
+    o.push('<g class="face ' + (cls || '') + '">');
     o.push('<ellipse cx="' + (mid - 10.5 * s) + '" cy="' + (y + 3.4 * s) + '" rx="' + (3 * s) + '" ry="' + (1.9 * s) + '" fill="#f28f95" opacity=".6"/>');
     o.push('<ellipse cx="' + (mid + 10.5 * s) + '" cy="' + (y + 3.4 * s) + '" rx="' + (3 * s) + '" ry="' + (1.9 * s) + '" fill="#f28f95" opacity=".6"/>');
     if (t === "happy") o.push(arc(mid - ex) + arc(mid + ex));
