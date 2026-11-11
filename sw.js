@@ -1,5 +1,5 @@
 // House Bar offline support. Bump VERSION when the menu changes.
-const VERSION = "house-bar-v8";
+const VERSION = "house-bar-v10";
 const CORE = ["./", "index.html", "manifest.webmanifest", "icons/apple-touch-icon.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
