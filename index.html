@@ -83,6 +83,8 @@ button{cursor:pointer}
 .drink:hover .face-shock,.drink:active .face-shock,.drink:focus-visible .face-shock,.art-big .face-shock{animation:shockon 1.25s steps(1) both}
 .drink:hover .face-main,.drink:active .face-main,.drink:focus-visible .face-main,.art-big .face-main{animation:mainoff 1.25s steps(1) both}
 .drink:hover .face-main g,.art-big .face-main{transform-box:fill-box}
+.drink:hover .art-tile svg,.drink:active .art-tile svg,.drink:focus-visible .art-tile svg{animation:wiggle .6s ease-in-out 1.15s both}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}55%{transform:rotate(5deg)}80%{transform:rotate(-2deg)}}
 @keyframes fillup{from{transform:translateY(var(--ff))}to{transform:none}}
 @keyframes shockon{0%{opacity:1}80%{opacity:0}100%{opacity:0}}
 @keyframes mainoff{0%{opacity:0}80%{opacity:1}100%{opacity:1}}
@@ -141,7 +143,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
 @media (min-height:700px) and (min-width:700px){.sheet-wrap{align-items:center}.sheet{border-radius:28px;border-bottom:1px solid var(--line)}}
 @keyframes fade{from{opacity:0}}
 @keyframes rise{from{transform:translateY(40px);opacity:0}}
-@media (prefers-reduced-motion:reduce){.sheet-wrap,.sheet,.tw,.enso .mascot,.facts .art-big svg,.liq,.face-shock,.face-main{animation:none!important}.key.holding::after{animation-duration:.01s}}
+@media (prefers-reduced-motion:reduce){.sheet-wrap,.sheet,.tw,.enso .mascot,.facts .art-big svg,.drink .art-tile svg,.liq,.face-shock,.face-main{animation:none!important}.key.holding::after{animation-duration:.01s}}
 .close{position:absolute;top:14px;right:14px;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:24px;line-height:1}
 .eyebrow{margin:0;font-size:12.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--oak);font-weight:400}
 .d-name{font-family:var(--display);font-weight:700;font-size:clamp(34px,5vw,50px);line-height:1.1;margin:10px 0 12px;text-wrap:balance;padding-right:44px}
@@ -150,7 +152,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
 @media (max-width:640px){.d-grid{grid-template-columns:1fr}}
 .facts{display:flex;flex-direction:column;gap:18px}
 .facts .art-big{background:var(--paper-2);border-radius:28px;display:grid;place-items:center;padding:14px 0}
-.facts .art-big svg{animation:bob 3.6s ease-in-out infinite}
+.facts .art-big svg{transform-origin:50% 90%;animation:wiggle .6s ease-in-out 1.15s, bob 3.6s ease-in-out 1.8s infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 .facts .art-big svg{width:190px;height:247px}
 @media (max-width:640px){.facts{flex-direction:row;flex-wrap:wrap}.facts .art-big svg{width:130px;height:169px}}
