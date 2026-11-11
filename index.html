@@ -179,6 +179,14 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:40;background:var(--ink);color:var(--paper);padding:12px 20px 11px;border-radius:999px;font-size:14px;letter-spacing:.04em;box-shadow:0 8px 30px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .25s}
 .toast.show{opacity:1}
 @media (max-width:560px){.mast{gap:16px}.enso{width:72px;height:72px}.seal{width:30px;height:30px;font-size:17px}.drink{grid-template-columns:72px 1fr;gap:14px}.art-tile{width:72px;height:94px}.art-tile svg{width:70px;height:91px}.row-tools{padding-left:86px}}
+.search{position:relative;display:flex;align-items:center;margin:-22px 0 34px}
+.search svg{position:absolute;left:18px;width:20px;height:20px;color:var(--ink-soft);pointer-events:none}
+.search input{width:100%;min-height:52px;padding:12px 52px 11px 50px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.65);font-size:17px;font-weight:300;color:var(--ink);-webkit-appearance:none;appearance:none}
+.search input::placeholder{color:#a39a8f}
+.search input:focus{outline:none;border-color:var(--matcha);box-shadow:0 0 0 3px rgba(180,196,151,.35)}
+.search input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.search .clear{position:absolute;right:8px;width:40px;height:40px;border-radius:50%;border:0;background:var(--paper-2);color:var(--ink);font-size:20px;line-height:1}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 /* Narrow screens: put the language and key buttons in a row above the title */
 @media (max-width:560px){.mast{padding-top:60px}.mast-text{padding-right:0}.mast .lang{top:6px;bottom:auto;right:60px}.mast .key{top:2px}}
 </style>
@@ -201,8 +209,8 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     spirit: {"Vodka":"ウォッカ","Gin":"ジン","Rum":"ラム","Agave":"テキーラ","Whisky":"ウイスキー","Aperitif":"アペリティフ","Sparkling wine":"スパークリングワイン","Cream liqueur":"クリームリキュール","Zero proof":"ノンアルコール"}
   };
   var UI = {
-    en: { tonight:"Tonight\u2019s menu", all:"Everything", pick:"\u2665 House pick", stock:"When stocked", cue:"See the recipe \u203a", inIt:"What\u2019s in it", how:"How it\u2019s made", glass:"Glass", method:"Method", garnish:"Garnish", strength:"Strength", resting:"The bar is resting tonight.", toggle:"日本語", toggleLabel:"日本語で表示" },
-    ja: { tonight:"今夜のメニュー", all:"すべて", pick:"\u2665 おすすめ", stock:"在庫があれば", cue:"レシピを見る \u203a", inIt:"材料", how:"作り方", glass:"グラス", method:"技法", garnish:"ガーニッシュ", strength:"強さ", resting:"今夜はお休みです。", toggle:"English", toggleLabel:"Show in English" }
+    en: { tonight:"Tonight\u2019s menu", all:"Everything", pick:"\u2665 House pick", stock:"When stocked", cue:"See the recipe \u203a", inIt:"What\u2019s in it", how:"How it\u2019s made", glass:"Glass", method:"Method", garnish:"Garnish", strength:"Strength", resting:"The bar is resting tonight.", toggle:"日本語", toggleLabel:"日本語で表示", search:"Search drinks or ingredients", clear:"Clear search", noMatch:"No drinks match" },
+    ja: { tonight:"今夜のメニュー", all:"すべて", pick:"\u2665 おすすめ", stock:"在庫があれば", cue:"レシピを見る \u203a", inIt:"材料", how:"作り方", glass:"グラス", method:"技法", garnish:"ガーニッシュ", strength:"強さ", resting:"今夜はお休みです。", toggle:"English", toggleLabel:"Show in English", search:"ドリンク名・材料で検索", clear:"検索をクリア", noMatch:"に一致するドリンクはありません。" }
   };
   var LANG_KEY = "house-cocktail-menu-lang";
   function t(k){ return (UI[ui.lang] || UI.en)[k]; }
@@ -457,7 +465,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
   state.drinks = state.drinks || [];
   state.categories = state.categories || [];
 
-  var ui = { manage: false, filter: "All", lang: "en" };
+  var ui = { manage: false, filter: "All", lang: "en", q: "" };
   try { if (localStorage.getItem(LANG_KEY) === "ja") ui.lang = "ja"; } catch (e) {}
   var artifactNS = null, canPublish = true, pubTimer = null;
 
@@ -518,6 +526,50 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     return html + '</div>';
   }
 
+  // ---------- Search ----------
+  function norm(x){
+    var s = String(x || "").toLowerCase();
+    try { s = s.normalize("NFKD").replace(/[\u0300-\u036f]/g, ""); } catch (e) {}
+    return s.replace(/[\u3041-\u3096]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) + 0x60); }); // hiragana → katakana
+  }
+  function haystack(d){
+    var parts = [d.name, d.description, d.spirit, d.category, d.garnish, d.glass, tr("cat", d.category), tr("spirit", d.spirit)];
+    (d.ingredients || []).forEach(function(x){ parts.push(x.i); });
+    if (d.ja) { parts.push(d.ja.name, d.ja.description, d.ja.garnish); (d.ja.ingredients || []).forEach(function(x){ parts.push(x.i); }); }
+    if (JA.cat[d.category]) parts.push(JA.cat[d.category]);
+    if (JA.spirit[d.spirit]) parts.push(JA.spirit[d.spirit]);
+    return norm(parts.join(" "));
+  }
+  function matches(d, q){
+    if (!q) return true;
+    var h = haystack(d);
+    return norm(q).split(/[\s\u3000]+/).filter(Boolean).every(function(w){ return h.indexOf(w) >= 0; });
+  }
+  function resultsHtml(visible, cats){
+    var h = "", any = false, q = (ui.q || "").trim();
+    cats.forEach(function(cat){
+      if (!q && ui.filter !== "All" && ui.filter !== cat) return;
+      // Regular drinks first, "when stocked" ones at the bottom of each section (order otherwise kept)
+      var items = visible.filter(function(d){ return d.category === cat && matches(d, q); });
+      items = items.filter(function(d){ return !d.special; }).concat(items.filter(function(d){ return d.special; }));
+      if (!items.length) return;
+      any = true;
+      h += '<section class="section"><div class="section-head"><h2>' + esc(tr("cat", cat)) + '</h2></div><div class="list">' +
+        items.map(function(d){ return drinkHtml(d, false); }).join("") + '</div></section>';
+    });
+    if (!any) h += '<p class="empty">' + (q ? esc(isJa() ? "「" + q + "」" + t("noMatch") : t("noMatch") + " \u201c" + q + "\u201d.") :
+      (ui.manage ? "No drinks yet. Tap \u201cAdd a drink\u201d to start the menu." : t("resting"))) + '</p>';
+    return h;
+  }
+  function refreshResults(){
+    var visible = state.drinks.filter(function(d){ return ui.manage || d.available !== false; });
+    var cats = categoriesInOrder().filter(function(c){ return visible.some(function(d){ return d.category === c; }); });
+    var r = $("#results"); if (r) r.innerHTML = resultsHtml(visible, cats);
+    var c = $(".search .clear"); if (c) c.hidden = !ui.q;
+    var chips = document.querySelectorAll(".chip");
+    for (var i = 0; i < chips.length; i++) chips[i].setAttribute("aria-pressed", String(!ui.q && ui.filter === chips[i].getAttribute("data-value")));
+  }
+
   function render(){
     artCount = 0;
     var visible = state.drinks.filter(function(d){ return ui.manage || d.available !== false; });
@@ -548,24 +600,15 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     if (cats.length > 1) {
       h += '<nav class="filters" aria-label="Menu sections">';
       ["All"].concat(cats).forEach(function(s){
-        h += '<button class="chip" type="button" data-action="filter" data-value="' + esc(s) + '" aria-pressed="' + (ui.filter === s) + '">' + (s === "All" ? t("all") : esc(tr("cat", s))) + '</button>';
+        h += '<button class="chip" type="button" data-action="filter" data-value="' + esc(s) + '" aria-pressed="' + (!ui.q && ui.filter === s) + '">' + (s === "All" ? t("all") : esc(tr("cat", s))) + '</button>';
       });
       h += '</nav>';
     }
 
-    var any = false;
-    cats.forEach(function(cat){
-      if (ui.filter !== "All" && ui.filter !== cat) return;
-      // Regular drinks first, "when stocked" ones at the bottom of each section (order otherwise kept)
-      var items = visible.filter(function(d){ return d.category === cat; });
-      items = items.filter(function(d){ return !d.special; }).concat(items.filter(function(d){ return d.special; }));
-      if (!items.length) return;
-      any = true;
-      var allSpecial = items.every(function(d){ return d.special; });
-      h += '<section class="section"><div class="section-head"><h2>' + esc(tr("cat", cat)) + '</h2>' + '' + '</div><div class="list">' +
-        items.map(function(d){ return drinkHtml(d, false); }).join("") + '</div></section>';
-    });
-    if (!any) h += '<p class="empty">' + (ui.manage ? "No drinks yet. Tap “Add a drink” to start the menu." : t("resting")) + '</p>';
+    h += '<div class="search"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L21 21"/></svg>' +
+      '<label class="sr" for="q">' + t("search") + '</label><input id="q" type="search" enterkeyhint="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="' + t("search") + '" value="' + esc(ui.q) + '">' +
+      '<button class="clear" type="button" data-action="clear-q" aria-label="' + t("clear") + '"' + (ui.q ? '' : ' hidden') + '>\u00d7</button></div>';
+    h += '<div id="results">' + resultsHtml(visible, cats) + '</div>';
     h += '<footer class="foot"><span class="kanpai">' + kanpai() + '<span>乾杯 · Kanpai!</span></span><span>' + esc((isJa() && state.ja && state.ja.footer) || state.footer || "") + '</span></footer></div>';
     $("#app").innerHTML = h;
   }
@@ -709,7 +752,8 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     if (a === "close") { closeSheet(); return; }
     if (a === "open") { showDetail(id); return; }
     if (a === "lang") { ui.lang = isJa() ? "en" : "ja"; try { localStorage.setItem(LANG_KEY, ui.lang); } catch (e) {} render(); return; }
-    if (a === "filter") { ui.filter = el.getAttribute("data-value"); render(); return; }
+    if (a === "filter") { ui.filter = el.getAttribute("data-value"); ui.q = ""; render(); return; }
+    if (a === "clear-q") { ui.q = ""; var qi = $("#q"); if (qi) { qi.value = ""; qi.focus(); } refreshResults(); return; }
     if (a === "edit") { showEditor(id); return; }
     if (a === "new") { showEditor(null); return; }
     if (a === "settings") { showSettings(); return; }
@@ -769,9 +813,13 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
   });
 
   document.addEventListener("input", function(ev){
+    if (ev.target.id === "q") { ui.q = ev.target.value; refreshResults(); return; }
     if (ev.target.id === "f-strength") { var w = $("#f-strength-word"); if (w) w.textContent = STRENGTH_WORDS[Number(ev.target.value) || 0]; }
   });
-  document.addEventListener("keydown", function(ev){ if (ev.key === "Escape" && $("#sheet").innerHTML) closeSheet(); });
+  document.addEventListener("keydown", function(ev){
+    if (ev.target && ev.target.id === "q" && ev.key === "Enter") { ev.preventDefault(); ev.target.blur(); return; }
+    if (ev.key === "Escape" && $("#sheet").innerHTML) closeSheet();
+  });
 
   // Press and hold the key to manage (keeps guests from editing by accident)
   var holdTimer = null, holdEl = null, held = false;
