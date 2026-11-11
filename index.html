@@ -562,8 +562,15 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
   try { embedded = JSON.parse(document.getElementById("menu-data").textContent); } catch (e) { embedded = { drinks: [], categories: [] }; }
   var local = null;
   try { local = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) { local = null; }
-  var state = (local && (local.updatedAt || 0) > (embedded.updatedAt || 0)) ? local : embedded;
+  // The menu itself always comes from the published copy, so new drinks show up straight away.
+  // This device only remembers which drinks are switched off or on for tonight.
+  var state = embedded;
   state.drinks = state.drinks || [];
+  var AVAIL_KEY = LS_KEY + "-onoff", avail = null;
+  try { avail = JSON.parse(localStorage.getItem(AVAIL_KEY) || "null"); } catch (e) { avail = null; }
+  if (!avail) { avail = {}; if (local && local.drinks) local.drinks.forEach(function(x){ if (x && x.id && x.available === false) avail[x.id] = false; }); }
+  state.drinks.forEach(function(d){ if (d.id in avail) d.available = avail[d.id]; });
+  function saveAvail(){ try { localStorage.setItem(AVAIL_KEY, JSON.stringify(avail)); } catch (e) {} }
   state.categories = state.categories || [];
 
   var ui = { manage: false, filter: "All", lang: "en", q: "" };
@@ -621,7 +628,6 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     if (ui.manage) {
       html += '<div class="row-tools">' +
         '<button class="switch" type="button" role="switch" aria-checked="' + (!off) + '" data-action="toggle" data-id="' + esc(d.id) + '"><span class="track"></span>' + (off ? "Off tonight" : "On tonight") + '</button>' +
-        '<button class="btn" type="button" data-action="edit" data-id="' + esc(d.id) + '">Edit</button>' +
       '</div>';
     }
     return html + '</div>';
@@ -659,7 +665,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
         items.map(function(d){ return drinkHtml(d, false); }).join("") + '</div></section>';
     });
     if (!any) h += '<p class="empty">' + (q ? esc(isJa() ? "「" + q + "」" + t("noMatch") : t("noMatch") + " \u201c" + q + "\u201d.") :
-      (ui.manage ? "No drinks yet. Tap \u201cAdd a drink\u201d to start the menu." : t("resting"))) + '</p>';
+      t("resting")) + '</p>';
     return h;
   }
   function refreshResults(){
@@ -683,18 +689,15 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
 
     var h = '<div class="shell">';
     if (ui.manage) {
-      h += '<div class="manage-bar"><p><strong>Managing</strong>Switch drinks on or off for tonight, edit recipes or add new ones.</p>' +
-        '<div class="btns"><button class="btn" type="button" data-action="settings">Bar name</button>' +
-        '<button class="btn" type="button" data-action="new">Add a drink</button>' +
-        '<button class="btn" type="button" data-action="backup">Copy backup</button>' +
-        '<button class="btn solid" type="button" data-action="done">Done</button></div></div>';
+      h += '<div class="manage-bar"><p><strong>Show or hide drinks</strong>Switch a drink off to hide it from tonight\u2019s menu, and back on when you have it again.</p>' +
+        '<div class="btns"><button class="btn solid" type="button" data-action="done">Done</button></div></div>';
     }
     h += '<header class="mast">' + enso() + '<div class="mast-text">' +
       '<h1 class="bar-name"><span>' + esc(state.barName || "The House Bar") + '</span><span class="seal" aria-hidden="true">酒</span></h1>' +
       ((isJa() && state.ja && state.ja.tagline) || state.tagline ? '<p class="tagline">' + esc((isJa() && state.ja && state.ja.tagline) || state.tagline) + '</p>' : '') +
       (date ? '<p class="dateline">' + t("tonight") + ' \u00b7 ' + esc(date) + '</p>' : '') + '</div>' +
       '<button class="lang" type="button" data-action="lang" aria-label="' + t("toggleLabel") + '">' + t("toggle") + '</button>' +
-      '<button class="key' + (ui.manage ? " on" : "") + '" type="button" data-hold="1" aria-label="' + (ui.manage ? "Finish managing the menu" : "Press and hold to manage the menu") + '">' +
+      '<button class="key' + (ui.manage ? " on" : "") + '" type="button" data-hold="1" aria-label="' + (ui.manage ? "Done showing or hiding drinks" : "Press and hold to show or hide drinks") + '">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M18 12v3"/><path d="M15.5 12v2"/></svg>' +
       '</button></header>';
 
@@ -855,9 +858,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     if (a === "lang") { ui.lang = isJa() ? "en" : "ja"; try { localStorage.setItem(LANG_KEY, ui.lang); } catch (e) {} render(); return; }
     if (a === "filter") { ui.filter = el.getAttribute("data-value"); ui.q = ""; render(); return; }
     if (a === "clear-q") { ui.q = ""; var qi = $("#q"); if (qi) { qi.value = ""; qi.focus(); } refreshResults(); return; }
-    if (a === "edit") { showEditor(id); return; }
-    if (a === "new") { showEditor(null); return; }
-    if (a === "settings") { showSettings(); return; }
+    if (a === "edit" || a === "new" || a === "settings") return;
     if (a === "backup") {
       var json = JSON.stringify(state);
       try { navigator.clipboard.writeText(json).then(function(){ toast("Menu copied. Paste it to Claude to keep it safe."); }, function(){ toast("Couldn’t copy the backup on this device."); }); }
@@ -865,7 +866,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
       return;
     }
     if (a === "done") { ui.manage = false; render(); return; }
-    if (a === "toggle") { var d = findDrink(id); if (d) { d.available = d.available === false; commit(); } return; }
+    if (a === "toggle") { var d = findDrink(id); if (d) { d.available = d.available === false; avail[d.id] = d.available; saveAvail(); if (artifactNS && canPublish) commit(); else { render(); toast(d.available ? "On tonight's menu" : "Hidden from tonight's menu"); } } return; }
     if (a === "delete") {
       if (!el.classList.contains("armed")) { el.classList.add("armed"); el.textContent = "Tap again to delete"; return; }
       state.drinks = state.drinks.filter(function(x){ return x.id !== id; });
@@ -930,14 +931,14 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     held = false;
     if (ui.manage) return;
     holdEl = k; k.classList.add("holding");
-    holdTimer = setTimeout(function(){ held = true; endHold(); ui.manage = true; render(); toast("Managing the menu"); }, 900);
+    holdTimer = setTimeout(function(){ held = true; endHold(); ui.manage = true; render(); toast("Show or hide drinks"); }, 900);
   });
   ["pointerup", "pointercancel", "pointerleave"].forEach(function(t){ document.addEventListener(t, function(){ if (holdEl) endHold(); }, true); });
   document.addEventListener("click", function(ev){
     var k = ev.target.closest("[data-hold]"); if (!k) return;
     if (held) { held = false; return; }
     if (ui.manage) { ui.manage = false; render(); }
-    else toast("Press and hold the key to manage the menu");
+    else toast("Press and hold the key to show or hide drinks");
   });
   document.addEventListener("keydown", function(ev){
     var k = ev.target.closest && ev.target.closest("[data-hold]");
@@ -959,7 +960,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
 (function(){
   if ("serviceWorker" in navigator) { window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(function(r){ try { r.update(); } catch (e) {} }).catch(function(){}); }); }
   // Reload when a newer menu has been published (the Home Screen app often resumes instead of reloading).
-  var BUILT = "1794393565918";
+  var BUILT = "1794398920574";
   function checkUpdate(){
     if (!navigator.onLine) return;
     fetch("version.json?t=" + Date.now(), { cache: "no-store" }).then(function(r){ return r.json(); }).then(function(v){
