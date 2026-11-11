@@ -233,7 +233,7 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     "Hurricane":  { fy:47, fs:.95, bowl:"M34 18 Q29 40 38 56 Q43 64 37 82 Q34 96 41 102 L59 102 Q66 96 63 82 Q57 64 62 56 Q71 40 66 18 Z", top:18, l:34, r:66, fill:26, bottom:102, foot:"M50 102 V110 M38 113 Q50 108 62 113" },
     "Coconut":    { fy:82, fs:1.25, bowl:"M20 60 Q17 112 50 113 Q83 112 80 60 Z", top:60, l:20, r:80, fill:62, bottom:113, foot:"", tumbler:true, shell:true },
     "Stemless wine glass": { fy:88, fs:1.25, bowl:"M30 44 Q19 76 24 100 Q29 116 50 116 Q71 116 76 100 Q81 76 70 44 Z", top:44, l:30, r:70, fill:50, bottom:116, foot:"", tumbler:true },
-    "1920s coupe": { fy:53, fs:1.1, bowl:"M15 40 L85 40 L76 58 L59 68 L41 68 L24 58 Z", top:40, l:15, r:85, fill:45, bottom:68, foot:"M50 68 V77 M45.5 77 H54.5 L52 83 H48 Z M50 83 V107 M37 113 L44 107 H56 L63 113 Z" },
+    "1920s coupe": { fy:50, fs:1, bowl:"M16 38 L84 38 L84 55.5 Q84 58.5 81 58.5 L19 58.5 Q16 58.5 16 55.5 Z", top:38, l:16, r:84, fill:43, bottom:58.5, foot:"M46 58.5 Q50 61 54 58.5 M50 60 V103 Q49.5 109 40 110.6 M50 103 Q50.5 109 60 110.6 M30 113 Q50 107.5 70 113 Z" },
     "Shot":       { fy:96, fs:0.85, bowl:"M37 74 L63 74 L60 114 L40 114 Z", top:74, l:37, r:63, fill:80, bottom:114, foot:"M39 115 H61", tumbler:true }
   };
   var artCount = 0;
@@ -281,6 +281,18 @@ html[lang="ja"] .tagline,html[lang="ja"] .ings,html[lang="ja"] .cue,html[lang="j
     out.push('<path d="' + g.bowl + '" fill="#ffffff" fill-opacity=".16" stroke="#6c655c" stroke-width="1.3" stroke-linejoin="round"/>');
     out.push('<path d="M' + (g.l + 5) + ' ' + (g.top + 6) + ' Q' + (g.l + 4) + ' ' + ((g.top + g.bottom) / 2) + ' ' + (g.l + 9) + ' ' + (g.bottom - 6) + '" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.6" stroke-linecap="round"/>');
     if (g.foot) out.push('<path d="' + g.foot + '" fill="none" stroke="#6c655c" stroke-width="1.3" stroke-linecap="round"/>');
+    if (g.cut) {
+      var cutLines = '<g clip-path="url(#' + id + ')" stroke-linecap="round">';
+      for (var fxp = g.l + 7; fxp <= g.r - 7; fxp += 6.5) {
+        var rel = (fxp - mid) / ((g.r - g.l) / 2), yb = g.top + (g.bottom - g.top) * Math.sqrt(Math.max(0, 1 - rel * rel)) - 1.5;
+        var even = Math.round((fxp - g.l) / 6.5) % 2 === 0;
+        cutLines += '<line x1="' + fxp.toFixed(1) + '" y1="' + (g.top + 7) + '" x2="' + (mid + (fxp - mid) * .82).toFixed(1) + '" y2="' + yb.toFixed(1) + '" stroke="' + (even ? '#ffffff' : '#6c655c') + '" stroke-opacity="' + (even ? .7 : .22) + '" stroke-width=".7"/>';
+      }
+      var zz = 'M' + (g.l + 1) + ' ' + (g.top + 4);
+      for (var zx = g.l + 1, zk = 0; zx < g.r - 1; zx += 3.4, zk++) zz += ' L' + (zx + 1.7).toFixed(1) + ' ' + (g.top + (zk % 2 ? 4 : 6.4));
+      cutLines += '<path d="' + zz + '" fill="none" stroke="#ffffff" stroke-opacity=".85" stroke-width=".7"/><line x1="' + g.l + '" y1="' + (g.top + 7.4) + '" x2="' + g.r + '" y2="' + (g.top + 7.4) + '" stroke="#6c655c" stroke-opacity=".25" stroke-width=".6"/></g>';
+      out.push(cutLines);
+    }
     if (g.shell) {
       out.push('<path d="' + g.bowl + '" fill="#7a4a2b" stroke="#5a3418" stroke-width="1.3"/>');
       [[30, 72, 38, 70], [60, 76, 70, 73], [27, 92, 34, 96], [64, 98, 72, 94], [44, 106, 54, 107], [40, 68, 46, 67]].forEach(function(k){ out.push('<path d="M' + k[0] + ' ' + k[1] + ' L' + k[2] + ' ' + k[3] + '" stroke="#9a6640" stroke-width="1" stroke-linecap="round"/>'); });
